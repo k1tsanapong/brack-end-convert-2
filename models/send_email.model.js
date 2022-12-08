@@ -29,12 +29,12 @@ const send_email_to_patient = async (data) => {
 
 
       let transporter = nodemailer.createTransport({
-        host: 'gmail',
-        service: 'Gmail',
+        host: 'smtp.ethereal.email',
+        port: 587,
         auth: {
-            user: `${process.env.My_Email}`,
-            pass: `${process.env.My_Email_Password}`,
-        },
+          user: `${process.env.My_Email}`,
+          pass: `${process.env.My_Email_Password}`,
+        }
     });
 
 
