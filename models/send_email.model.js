@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const conn = require("../db");
 const nodemailer = require("nodemailer");
 
@@ -9,9 +11,13 @@ const send_email_to_patient = async (data) => {
 
   let split_string = data.send_to_patient.split(",");
 
+  console.log(split_string);
+
   let get_detail = [];
 
   try {
+
+
     let sql =
       'SELECT `hos_num`, `e_mail`, `date_input`, CONCAT_WS(" ", `f_name`, `l_name`) AS `whole_name` FROM `patient` WHERE hos_num IN (?)';
     get_detail = await conn.awaitQuery(sql, [split_string]);
@@ -19,7 +25,33 @@ const send_email_to_patient = async (data) => {
 
     results = await get_detail.forEach(function (item, i) {
       console.log("sending...");
-      store_url.push(test_email(get_detail[i]));
+
+
+
+      let transporter = nodemailer.createTransport({
+        host: 'gmail',
+        service: 'Gmail',
+        auth: {
+            user: `${process.env.My_Email}`,
+            pass: `${process.env.My_Email_Password}`,
+        },
+    });
+
+
+    transporter.sendMail({
+        from: `${process.env.My_User_name} <${process.env.My_Email}>`,   // ผู้ส่ง
+        to: `${item.whole_name} <${item.e_mail}>`,// ผู้รับ
+        subject: "สวัสดีจ้า",                      // หัวข้อ
+        text: "สวัสดีนะ",                         // ข้อความ
+        html: `${JSON.stringify(item)}`,
+    }, (err, info) => {
+        if (err) {
+            console.log(err);
+        } else {
+            console.log(info.messageId);
+        }
+    });
+
     });
 
     return JSON.stringify({ status: 200, error: null, response: results });
@@ -31,56 +63,6 @@ const send_email_to_patient = async (data) => {
   }
 };
 
-const test_email = async (to_who) => {
-  nodemailer.createTestAccount((err, account) => {
-    // create reusable transporter object using the default SMTP transport
-    let transporter = nodemailer.createTransport({
-      host: "smtp.ethereal.email",
-      port: 587,
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: account.user, // generated ethereal user
-        pass: account.pass, // generated ethereal password
-      },
-    });
-
-    // let option = {
-    //     from: 'smtp.ethereal.email',
-    //     to: `${to_who.e_mail}`,
-
-    //     subject: 'test123',
-    //     html: `<p>${JSON.stringify(to_who)}</p>`
-    // }
-
-    transporter.sendMail(test_email_option(to_who)).then((info) => {
-      console.log("Suss");
-      console.log("Preview URL: " + nodemailer.getTestMessageUrl(info));
-
-      return nodemailer.getTestMessageUrl(info);
-    });
-  });
-};
-
-const test_email_option = (to_who) => {
-  let option = {
-    from: "smtp.ethereal.email",
-    to: `${to_who.e_mail}`,
-
-    subject: "test123",
-    html: `${html_rendering(to_who)}`,
-  };
-
-  return option;
-};
-
-function html_rendering(detail) {
-  let html = `
-  <div> <h1>hos_num : </h1> <p>${JSON.stringify(detail)}</p> </div>
-    
-    `;
-
-  return html;
-}
 
 module.exports = {
   send_email_to_patient,
